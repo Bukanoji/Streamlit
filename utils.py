@@ -88,10 +88,10 @@ def clean_word(word):
 
 def load_normalization_dict(kamus_path):
     """
-    Load normalization dictionary from an Excel file.
-    File diharapkan memiliki kolom 'tidak_baku' dan 'kata_baku'.
+    Load normalization dictionary from a CSV file (comma-separated).
+    File diharapkan memiliki dua kolom: 'tidak_baku' dan 'kata_baku'.
     """
-    kamus_data = pd.read_excel(kamus_path)
+    kamus_data = pd.read_csv(kamus_path, delimiter=',')
     return dict(zip(kamus_data['tidak_baku'], kamus_data['kata_baku']))
 
 def replace_taboo_words(text, kamus_tidak_baku):
