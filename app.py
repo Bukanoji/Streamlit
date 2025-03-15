@@ -8,17 +8,23 @@ from utils import (
     train_model,
     plot_confusion_matrix,
     plot_classification_metrics,
-    text_preprocessing
+    text_preprocessing,
+    full_text_pipeline,
+    load_normalization_dict
 )
 
-# Load data from Excel file
-data = load_data("data/6Fixpreprocecing - Fixpreprocecing.csv")  # Changed to .xlsx extension
+# Load data from CSV file
+data = load_data("data/6Fixpreprocecing - Fixpreprocecing.csv")
 
 # Handle missing values in 'full_text' column
 data['full_text'] = data['full_text'].astype(str)
 
-# Preprocess data
-data['cleaning'] = data['full_text'].apply(text_preprocessing)
+# Load normalization dictionary (pastikan file kamuskatabaku.xlsx tersedia di folder data)
+kamus_tidak_baku = load_normalization_dict("data/kamuskatabaku.csv")
+
+# Preprocess data menggunakan full pipeline (tanpa visual tambahan)
+# Hasil akhir disimpan di kolom 'cleaning' agar tetap kompatibel dengan train_model()
+data['cleaning'] = data['full_text'].apply(lambda x: full_text_pipeline(x, kamus_tidak_baku))
 
 # Remove rows with missing values in 'cleaning' or 'sentimen'
 data = data.dropna(subset=['cleaning', 'sentimen'])
@@ -37,7 +43,7 @@ accuracy, report, y_test, y_pred = train_model(data)
 # Set page config
 st.set_page_config(page_title="ANALISIS SENTIMEN", layout="wide")
 
-# Custom CSS
+# Custom CSS (tetap sama, tanpa perubahan visual)
 st.markdown("""
 <style>
     .reportview-container .main .block-container {
@@ -117,7 +123,6 @@ st.markdown("""
         object-fit: cover !important;
         border-radius: 5px;
     }
-
     .profile-image {
         width: 100%;
         height: 100%;
@@ -152,12 +157,10 @@ page = st.sidebar.selectbox("Pilih Halaman", ["Dashboard", "Dataset", "Analisis 
 if page == "Dashboard":
     # Header
     st.markdown('<div class="header"><div class="logo">ANALISIS SENTIMEN</div>', unsafe_allow_html=True)
-
     # Main content
     with st.container():
         st.markdown('<div class="main-content">', unsafe_allow_html=True)
         st.markdown('<h1 class="dashboard-title">Dashboard</h1>', unsafe_allow_html=True)
-        
         col1, col2 = st.columns([6, 4])
         with col1:
             st.markdown('<div class="text-section">', unsafe_allow_html=True)
@@ -165,65 +168,46 @@ if page == "Dashboard":
             st.markdown('<p>Judul Skripsi</p>', unsafe_allow_html=True)
             st.markdown('<h2 class="thesis-title">ANALISIS SENTIMEN MASYARAKAT TERHADAP KENAIKAN PPN MENJADI 12% DI INDONESIA PADA MEDIA SOSIAL X MENGGUNAKAN ALGORITMA SUPPORT VECTOR MACHINE</h2>', unsafe_allow_html=True)
             st.markdown('</div></div>', unsafe_allow_html=True)
-        
         with col2:
             st.markdown('<div class="image-section">', unsafe_allow_html=True)
             st.markdown('<div class="image-wrapper">', unsafe_allow_html=True)
-            st.image("foto profil.png")  # Hapus parameter width
+            st.image("C:/Users/ahmdf/Pictures/Screenshots/foto profil.png")
             st.markdown('</div>', unsafe_allow_html=True)
             st.markdown('<p class="name">Octafiana Hanani Fityati Syifa</p>', unsafe_allow_html=True)
             st.markdown('<p class="id-number">21.12.2158</p>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
-
     # Footer
     st.markdown('<footer class="footer"><p class="footer-name">Octafiana Hanani Fityati Syifa</p></footer>', unsafe_allow_html=True)
 
 elif page == "Dataset":
     st.header("Dataset Data Sentimen")
-    
-    # Show raw data by default with scrolling
     st.subheader("Data Mentah")
-    st.dataframe(data)  # This will display the full dataset with a scroll bar
-    
-    # Make sentiment distribution chart smaller
+    st.dataframe(data)
     st.subheader("Distribusi Sentimen")
     sentiment_counts = data['sentimen'].value_counts()
-    fig = plot_sentiment_distribution(sentiment_counts, figsize=(6, 4))  # Smaller figure size
+    fig = plot_sentiment_distribution(sentiment_counts, figsize=(6, 4))
     st.pyplot(fig)
 
 elif page == "Analisis Teks":
     st.header("Analisis Teks")
-    
     text_input = st.text_area("Masukkan teks untuk dianalisis")
     if st.button("Analisis"):
-        # Add your text analysis functionality here
+        # Implementasi analisis teks dapat dikembangkan sesuai kebutuhan
         st.write("Hasil analisis akan ditampilkan di sini")
 
 elif page == "Model Evaluasi":
     st.header("Evaluasi Model")
-    
     split_ratios = [0.1, 0.2, 0.3, 0.4]  # Corresponding to 90:10, 80:20, etc.
     split_labels = ["90:10", "80:20", "70:30", "60:40"]
-    
-    # Create columns for side-by-side display
     cols = st.columns(len(split_ratios), gap="small")
-    
     for i, (ratio, label) in enumerate(zip(split_ratios, split_labels)):
         with cols[i]:
             st.subheader(f"Pemisahan Data {label}")
-            
-            # Train model with current split ratio
             accuracy, report, y_test, y_pred = train_model(data, test_size=ratio)
-            
-            # Show accuracy
             st.write(f"Akurasi Model: {accuracy:.2%}")
-            
-            # Confusion matrix
             st.subheader("Confusion Matrix")
             fig_cm = plot_confusion_matrix(y_test, y_pred)
             st.pyplot(fig_cm)
-            
-            # Classification metrics
             st.subheader("Metrik Klasifikasi")
             fig_metrics = plot_classification_metrics(report)
             st.pyplot(fig_metrics)
