@@ -6,6 +6,9 @@ from utils import (
     load_data,
     plot_sentiment_distribution,
     train_model,
+    train_model_split_80_20,
+    train_model_split_70_30,
+    train_model_split_60_40,
     plot_confusion_matrix,
     plot_classification_metrics,
     text_preprocessing,
@@ -19,11 +22,11 @@ data = load_data("data/6Fixpreprocecing - Fixpreprocecing.csv")
 # Handle missing values in 'full_text' column
 data['full_text'] = data['full_text'].astype(str)
 
-# Load normalization dictionary (pastikan file kamuskatabaku.xlsx tersedia di folder data)
+# Load normalization dictionary (pastikan file kamuskatabaku.csv tersedia di folder data)
 kamus_tidak_baku = load_normalization_dict("data/kamuskatabaku.csv")
 
 # Preprocess data menggunakan full pipeline (tanpa visual tambahan)
-# Hasil akhir disimpan di kolom 'cleaning' agar tetap kompatibel dengan train_model()
+# Hasil akhir disimpan di kolom 'cleaning' agar tetap kompatibel dengan fungsi pelatihan
 data['cleaning'] = data['full_text'].apply(lambda x: full_text_pipeline(x, kamus_tidak_baku))
 
 # Remove rows with missing values in 'cleaning' or 'sentimen'
@@ -36,9 +39,6 @@ print("Class distribution:", class_counts)
 # Remove classes with less than 2 samples
 min_samples = 2
 data = data[data['sentimen'].map(class_counts) >= min_samples]
-
-# Train model
-accuracy, report, y_test, y_pred = train_model(data)
 
 # Set page config
 st.set_page_config(page_title="ANALISIS SENTIMEN", layout="wide")
@@ -155,9 +155,7 @@ st.sidebar.header("Menu")
 page = st.sidebar.selectbox("Pilih Halaman", ["Dashboard", "Dataset", "Analisis Teks", "Model Evaluasi"], index=0)
 
 if page == "Dashboard":
-    # Header
     st.markdown('<div class="header"><div class="logo">ANALISIS SENTIMEN</div>', unsafe_allow_html=True)
-    # Main content
     with st.container():
         st.markdown('<div class="main-content">', unsafe_allow_html=True)
         st.markdown('<h1 class="dashboard-title">Dashboard</h1>', unsafe_allow_html=True)
@@ -176,7 +174,6 @@ if page == "Dashboard":
             st.markdown('<p class="name">Octafiana Hanani Fityati Syifa</p>', unsafe_allow_html=True)
             st.markdown('<p class="id-number">21.12.2158</p>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
-    # Footer
     st.markdown('<footer class="footer"><p class="footer-name">Octafiana Hanani Fityati Syifa</p></footer>', unsafe_allow_html=True)
 
 elif page == "Dataset":
@@ -192,18 +189,32 @@ elif page == "Analisis Teks":
     st.header("Analisis Teks")
     text_input = st.text_area("Masukkan teks untuk dianalisis")
     if st.button("Analisis"):
-        # Implementasi analisis teks dapat dikembangkan sesuai kebutuhan
         st.write("Hasil analisis akan ditampilkan di sini")
 
 elif page == "Model Evaluasi":
     st.header("Evaluasi Model")
-    split_ratios = [0.1, 0.2, 0.3, 0.4]  # Corresponding to 90:10, 80:20, etc.
+    # Split ratios: 0.1 = 90:10, 0.2 = 80:20, 0.3 = 70:30, 0.4 = 60:40
+    split_ratios = [0.1, 0.2, 0.3, 0.4]
     split_labels = ["90:10", "80:20", "70:30", "60:40"]
     cols = st.columns(len(split_ratios), gap="small")
+    
     for i, (ratio, label) in enumerate(zip(split_ratios, split_labels)):
         with cols[i]:
             st.subheader(f"Pemisahan Data {label}")
-            accuracy, report, y_test, y_pred = train_model(data, test_size=ratio)
+            # Panggil fungsi pelatihan sesuai rasio
+            if ratio == 0.1:
+                # Split 90:10
+                accuracy, report, y_test, y_pred = train_model(data, test_size=ratio)
+            elif ratio == 0.2:
+                # Split 80:20
+                accuracy, report, y_test, y_pred = train_model_split_80_20(data, test_size=ratio)
+            elif ratio == 0.3:
+                # Split 70:30
+                accuracy, report, y_test, y_pred = train_model_split_70_30(data, test_size=ratio)
+            elif ratio == 0.4:
+                # Split 60:40
+                accuracy, report, y_test, y_pred = train_model_split_60_40(data, test_size=ratio)
+            
             st.write(f"Akurasi Model: {accuracy:.2%}")
             st.subheader("Confusion Matrix")
             fig_cm = plot_confusion_matrix(y_test, y_pred)
