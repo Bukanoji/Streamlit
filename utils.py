@@ -144,54 +144,187 @@ def full_text_pipeline(text, kamus_tidak_baku):
     return stemmed
 
 ##############################################
-#           MODEL TRAINING FUNCTION          #
+#           MODEL TRAINING FUNCTIONS         #
 ##############################################
+# Fungsi train_model untuk split 90:10 (test_size=0.2)
 def train_model(data, text_column='cleaning', label_column='sentimen', test_size=0.2):
     """
-    Train and evaluate the SVM classification model.
+    Train and evaluate the SVM classification model for split 90:10.
     Proses:
-      - Hilangkan nilai kosong pada kolom yang ditentukan.
-      - Pisahkan data dengan stratifikasi menggunakan train_test_split.
-      - Lakukan TF-IDF Vectorization.
-      - Atasi ketidakseimbangan kelas dengan SMOTE.
-      - Optimasi hyperparameter SVM menggunakan GridSearchCV.
+      - Hapus missing values.
+      - Split data dengan test_size=0.2 (90:10) dan stratifikasi.
+      - TF-IDF vectorization.
+      - Tangani ketidakseimbangan kelas dengan SMOTE.
+      - Optimasi hyperparameter SVM (kernel: 'linear', 'rbf') menggunakan GridSearchCV.
     Mengembalikan: accuracy, classification report (dictionary), y_test, y_pred.
     """
-    # Hapus baris dengan nilai kosong pada kolom yang relevan
     data = data.dropna(subset=[text_column, label_column])
-    
     X = data[text_column]
     y = data[label_column]
     
-    # Pisahkan data
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=test_size, random_state=42, stratify=y
     )
     
-    # TF-IDF Vectorization
     tfidf = TfidfVectorizer()
     X_train_tfidf = tfidf.fit_transform(X_train)
     X_test_tfidf = tfidf.transform(X_test)
     
-    # Penanganan ketidakseimbangan kelas dengan SMOTE
     smote = SMOTE(random_state=42)
     X_train_resampled, y_train_resampled = smote.fit_resample(X_train_tfidf, y_train)
     
-    # Pengaturan hyperparameter SVM menggunakan GridSearchCV
     param_grid = {
         'C': [0.1, 1, 10, 100],
         'gamma': ['scale', 'auto', 0.01, 0.1, 1],
         'kernel': ['linear', 'rbf']
     }
-    
     grid_search = GridSearchCV(SVC(), param_grid, cv=5, scoring='accuracy')
     grid_search.fit(X_train_resampled, y_train_resampled)
     
-    # Prediksi dan evaluasi
     y_pred = grid_search.predict(X_test_tfidf)
     accuracy = accuracy_score(y_test, y_pred)
     report = classification_report(y_test, y_pred, output_dict=True)
+    return accuracy, report, y_test, y_pred
+
+# Fungsi train_model_split_80_20 untuk split 80:20 (test_size=0.2)
+def train_model_split_80_20(data, text_column='steming_data', label_column='sentimen', test_size=0.2):
+    """
+    Train model for split 80:20 with two stages:
+      1. Baseline training (without SMOTE) using GridSearchCV with kernel ['linear', 'rbf', 'poly'].
+      2. Final training after SMOTE using GridSearchCV with kernel ['linear', 'rbf'].
+    Mengembalikan: accuracy, classification report, y_test, y_pred.
+    """
+    data = data.dropna(subset=[text_column, label_column])
+    X = data[text_column]
+    y = data[label_column]
     
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=test_size, random_state=42, stratify=y
+    )
+    
+    tfidf = TfidfVectorizer()
+    X_train_tfidf = tfidf.fit_transform(X_train)
+    X_test_tfidf = tfidf.transform(X_test)
+    
+    # Tahap 1: Baseline training (tanpa SMOTE)
+    param_grid_baseline = {
+        'C': [0.1, 1, 10, 100],
+        'gamma': ['scale', 'auto', 0.01, 0.1, 1],
+        'kernel': ['linear', 'rbf', 'poly']
+    }
+    grid_search_baseline = GridSearchCV(SVC(), param_grid_baseline, cv=5, scoring='accuracy')
+    grid_search_baseline.fit(X_train_tfidf, y_train)
+    y_pred_baseline = grid_search_baseline.predict(X_test_tfidf)
+    # Confusion matrix baseline (bisa digunakan untuk analisis tambahan)
+    cm_baseline = confusion_matrix(y_test, y_pred_baseline)
+    
+    # Tahap 2: Final training with SMOTE
+    smote = SMOTE(random_state=42)
+    X_train_res, y_train_res = smote.fit_resample(X_train_tfidf, y_train)
+    
+    param_grid_resampled = {
+        'C': [0.1, 1, 10, 100],
+        'gamma': ['scale', 'auto', 0.01, 0.1, 1],
+        'kernel': ['linear', 'rbf']
+    }
+    grid_search_resampled = GridSearchCV(SVC(), param_grid_resampled, cv=5, scoring='accuracy')
+    grid_search_resampled.fit(X_train_res, y_train_res)
+    
+    y_pred = grid_search_resampled.predict(X_test_tfidf)
+    accuracy = accuracy_score(y_test, y_pred)
+    report = classification_report(y_test, y_pred, output_dict=True)
+    return accuracy, report, y_test, y_pred
+
+# Fungsi train_model_split_70_30 untuk split 70:30 (test_size=0.3)
+def train_model_split_70_30(data, text_column='steming_data', label_column='sentimen', test_size=0.3):
+    """
+    Train model for split 70:30 with two stages:
+      1. Baseline training (without SMOTE) using GridSearchCV with kernel ['linear', 'rbf', 'poly'].
+      2. Final training after SMOTE using GridSearchCV with kernel ['linear', 'rbf'].
+    Mengembalikan: accuracy, classification report, y_test, y_pred.
+    """
+    data = data.dropna(subset=[text_column, label_column])
+    X = data[text_column]
+    y = data[label_column]
+    
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=test_size, random_state=42, stratify=y
+    )
+    
+    tfidf = TfidfVectorizer()
+    X_train_tfidf = tfidf.fit_transform(X_train)
+    X_test_tfidf = tfidf.transform(X_test)
+    
+    param_grid_baseline = {
+        'C': [0.1, 1, 10, 100],
+        'gamma': ['scale', 'auto', 0.01, 0.1, 1],
+        'kernel': ['linear', 'rbf', 'poly']
+    }
+    grid_search_baseline = GridSearchCV(SVC(), param_grid_baseline, cv=5, scoring='accuracy')
+    grid_search_baseline.fit(X_train_tfidf, y_train)
+    y_pred_baseline = grid_search_baseline.predict(X_test_tfidf)
+    cm_baseline = confusion_matrix(y_test, y_pred_baseline)
+    
+    smote = SMOTE(random_state=42)
+    X_train_res, y_train_res = smote.fit_resample(X_train_tfidf, y_train)
+    
+    param_grid_resampled = {
+        'C': [0.1, 1, 10, 100],
+        'gamma': ['scale', 'auto', 0.01, 0.1, 1],
+        'kernel': ['linear', 'rbf']
+    }
+    grid_search_resampled = GridSearchCV(SVC(), param_grid_resampled, cv=5, scoring='accuracy')
+    grid_search_resampled.fit(X_train_res, y_train_res)
+    
+    y_pred = grid_search_resampled.predict(X_test_tfidf)
+    accuracy = accuracy_score(y_test, y_pred)
+    report = classification_report(y_test, y_pred, output_dict=True)
+    return accuracy, report, y_test, y_pred
+
+# Fungsi train_model_split_60_40 untuk split 60:40 (test_size=0.4)
+def train_model_split_60_40(data, text_column='steming_data', label_column='sentimen', test_size=0.4):
+    """
+    Train model for split 60:40 with two stages:
+      1. Baseline training (without SMOTE) using GridSearchCV with kernel ['linear', 'rbf', 'poly'].
+      2. Final training after SMOTE using GridSearchCV with kernel ['linear', 'rbf'].
+    Mengembalikan: accuracy, classification report, y_test, y_pred.
+    """
+    data = data.dropna(subset=[text_column, label_column])
+    X = data[text_column]
+    y = data[label_column]
+    
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=test_size, random_state=42, stratify=y
+    )
+    
+    tfidf = TfidfVectorizer()
+    X_train_tfidf = tfidf.fit_transform(X_train)
+    X_test_tfidf = tfidf.transform(X_test)
+    
+    param_grid_baseline = {
+        'C': [0.1, 1, 10, 100],
+        'gamma': ['scale', 'auto', 0.01, 0.1, 1],
+        'kernel': ['linear', 'rbf', 'poly']
+    }
+    grid_search_baseline = GridSearchCV(SVC(), param_grid_baseline, cv=5, scoring='accuracy')
+    grid_search_baseline.fit(X_train_tfidf, y_train)
+    y_pred_baseline = grid_search_baseline.predict(X_test_tfidf)
+    cm_baseline = confusion_matrix(y_test, y_pred_baseline)
+    
+    smote = SMOTE(random_state=42)
+    X_train_res, y_train_res = smote.fit_resample(X_train_tfidf, y_train)
+    
+    param_grid_resampled = {
+        'C': [0.1, 1, 10, 100],
+        'gamma': ['scale', 'auto', 0.01, 0.1, 1],
+        'kernel': ['linear', 'rbf']
+    }
+    grid_search_resampled = GridSearchCV(SVC(), param_grid_resampled, cv=5, scoring='accuracy')
+    grid_search_resampled.fit(X_train_res, y_train_res)
+    
+    y_pred = grid_search_resampled.predict(X_test_tfidf)
+    accuracy = accuracy_score(y_test, y_pred)
+    report = classification_report(y_test, y_pred, output_dict=True)
     return accuracy, report, y_test, y_pred
 
 ##############################################
@@ -199,10 +332,6 @@ def train_model(data, text_column='cleaning', label_column='sentimen', test_size
 #  (Dipertahankan sesuai kode asli utils.py) #
 ##############################################
 def plot_sentiment_distribution(sentiment_counts, figsize=(8, 5)):
-    """
-    Plot distribusi sentimen.
-    Fungsi ini dipertahankan karena merupakan bagian asli dari utils.py.
-    """
     sentiment_df = sentiment_counts.reset_index()
     sentiment_df.columns = ['sentimen', 'count']
     
