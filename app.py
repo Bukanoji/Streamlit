@@ -162,7 +162,7 @@ if page == "Dashboard":
         with col2:
             st.markdown('<div class="image-section">', unsafe_allow_html=True)
             st.markdown('<div class="image-wrapper">', unsafe_allow_html=True)
-            st.image("C:/Users/ahmdf/Pictures/Screenshots/foto profil.png")
+            st.image("foto profil.png")
             st.markdown('</div>', unsafe_allow_html=True)
             st.markdown('<p class="name">Octafiana Hanani Fityati Syifa</p>', unsafe_allow_html=True)
             st.markdown('<p class="id-number">21.12.2158</p>', unsafe_allow_html=True)
