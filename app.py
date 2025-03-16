@@ -10,10 +10,7 @@ from utils import (
     train_model_split_70_30,
     train_model_split_60_40,
     plot_confusion_matrix,
-    plot_classification_metrics,
-    text_preprocessing,
-    full_text_pipeline,
-    load_normalization_dict
+    plot_classification_metrics
 )
 
 # Load data from CSV file
@@ -22,15 +19,11 @@ data = load_data("data/6Fixpreprocecing - Fixpreprocecing.csv")
 # Handle missing values in 'full_text' column
 data['full_text'] = data['full_text'].astype(str)
 
-# Load normalization dictionary (pastikan file kamuskatabaku.csv tersedia di folder data)
-kamus_tidak_baku = load_normalization_dict("data/kamuskatabaku.csv")
+# Gunakan kolom 'full_text' sebagai kolom teks untuk analisis
+data['text'] = data['full_text']
 
-# Preprocess data menggunakan full pipeline (tanpa visual tambahan)
-# Hasil akhir disimpan di kolom 'cleaning' agar tetap kompatibel dengan fungsi pelatihan
-data['cleaning'] = data['full_text'].apply(lambda x: full_text_pipeline(x, kamus_tidak_baku))
-
-# Remove rows with missing values in 'cleaning' or 'sentimen'
-data = data.dropna(subset=['cleaning', 'sentimen'])
+# Remove rows with missing values in 'text' or 'sentimen'
+data = data.dropna(subset=['text', 'sentimen'])
 
 # Check class distribution
 class_counts = data['sentimen'].value_counts()
@@ -43,7 +36,7 @@ data = data[data['sentimen'].map(class_counts) >= min_samples]
 # Set page config
 st.set_page_config(page_title="ANALISIS SENTIMEN", layout="wide")
 
-# Custom CSS (tetap sama, tanpa perubahan visual)
+# Custom CSS (tanpa perubahan visual)
 st.markdown("""
 <style>
     .reportview-container .main .block-container {
@@ -150,9 +143,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Sidebar
+# Sidebar (opsi halaman dikurangi menjadi 3: Dashboard, Dataset, Model Evaluasi)
 st.sidebar.header("Menu")
-page = st.sidebar.selectbox("Pilih Halaman", ["Dashboard", "Dataset", "Analisis Teks", "Model Evaluasi"], index=0)
+page = st.sidebar.selectbox("Pilih Halaman", ["Dashboard", "Dataset", "Model Evaluasi"], index=0)
 
 if page == "Dashboard":
     st.markdown('<div class="header"><div class="logo">ANALISIS SENTIMEN</div>', unsafe_allow_html=True)
@@ -169,7 +162,7 @@ if page == "Dashboard":
         with col2:
             st.markdown('<div class="image-section">', unsafe_allow_html=True)
             st.markdown('<div class="image-wrapper">', unsafe_allow_html=True)
-            st.image("foto profil.png")
+            st.image("C:/Users/ahmdf/Pictures/Screenshots/foto profil.png")
             st.markdown('</div>', unsafe_allow_html=True)
             st.markdown('<p class="name">Octafiana Hanani Fityati Syifa</p>', unsafe_allow_html=True)
             st.markdown('<p class="id-number">21.12.2158</p>', unsafe_allow_html=True)
@@ -185,12 +178,6 @@ elif page == "Dataset":
     fig = plot_sentiment_distribution(sentiment_counts, figsize=(6, 4))
     st.pyplot(fig)
 
-elif page == "Analisis Teks":
-    st.header("Analisis Teks")
-    text_input = st.text_area("Masukkan teks untuk dianalisis")
-    if st.button("Analisis"):
-        st.write("Hasil analisis akan ditampilkan di sini")
-
 elif page == "Model Evaluasi":
     st.header("Evaluasi Model")
     # Split ratios: 0.1 = 90:10, 0.2 = 80:20, 0.3 = 70:30, 0.4 = 60:40
@@ -204,16 +191,16 @@ elif page == "Model Evaluasi":
             # Panggil fungsi pelatihan sesuai rasio
             if ratio == 0.1:
                 # Split 90:10
-                accuracy, report, y_test, y_pred = train_model(data, test_size=ratio)
+                accuracy, report, y_test, y_pred = train_model(data, text_column='text', test_size=ratio)
             elif ratio == 0.2:
                 # Split 80:20
-                accuracy, report, y_test, y_pred = train_model_split_80_20(data, test_size=ratio)
+                accuracy, report, y_test, y_pred = train_model_split_80_20(data, text_column='text', test_size=ratio)
             elif ratio == 0.3:
                 # Split 70:30
-                accuracy, report, y_test, y_pred = train_model_split_70_30(data, test_size=ratio)
+                accuracy, report, y_test, y_pred = train_model_split_70_30(data, text_column='text', test_size=ratio)
             elif ratio == 0.4:
                 # Split 60:40
-                accuracy, report, y_test, y_pred = train_model_split_60_40(data, test_size=ratio)
+                accuracy, report, y_test, y_pred = train_model_split_60_40(data, text_column='text', test_size=ratio)
             
             st.write(f"Akurasi Model: {accuracy:.2%}")
             st.subheader("Confusion Matrix")
